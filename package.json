@@ -1,0 +1,15 @@
+{
+  "name": "com.gamehelper.sdk",
+  "version": "1.0.0",
+  "displayName": "Game Helper SDK Package",
+  "description": "A repo full of helper and design pattern codes for a faster start to a fresh Unity project",
+  "unity": "2021.3",
+  "unityRelease": "0b5",
+  "documentationUrl": "https://github.com/AkarErdem/GameHelperSDK/",
+  "keywords": [],
+  "author": {
+    "name": "Erdem Akar",
+    "email": "erdemakar1998@gmail.com",
+    "url": "https://github.com/AkarErdem/"
+  }
+}
