@@ -16,10 +16,16 @@ namespace GameHelperSDK
         private Vector3 _currentVelocity;
         private Vector3 _lookAheadPos;
 
+        private Vector3 _cameraPos
+        {
+            get => CameraHelpers.MainCamera.transform.position;
+            set => CameraHelpers.MainCamera.transform.position = value;
+        }
+        
         private void Start()
         {
             _lastTargetPosition = _target.position;
-            _offsetZ = (transform.position - _target.position).z;
+            _offsetZ = (_cameraPos - _target.position).z;
             transform.parent = null;
         }
 
@@ -34,7 +40,7 @@ namespace GameHelperSDK
 
             if (updateLookAheadTarget)
             {
-                _lookAheadPos = _lookAheadFactor*Vector3.right*Mathf.Sign(xMoveDelta);
+                _lookAheadPos = Vector3.right * (_lookAheadFactor * Mathf.Sign(xMoveDelta));
             }
             else
             {
@@ -42,9 +48,9 @@ namespace GameHelperSDK
             }
 
             Vector3 aheadTargetPos = _target.position + _lookAheadPos + Vector3.forward * _offsetZ;
-            Vector3 newPos = Vector3.SmoothDamp(transform.position, aheadTargetPos, ref _currentVelocity, _damping);
+            Vector3 newPos = Vector3.SmoothDamp(_cameraPos, aheadTargetPos, ref _currentVelocity, _damping);
 
-            transform.position = newPos;
+            _cameraPos = newPos;
 
             _lastTargetPosition = _target.position;
         }
