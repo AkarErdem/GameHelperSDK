@@ -145,7 +145,7 @@ namespace GameHelperSDK
 			base.InitializeSingleton();
 			
 			// Create logger
-			_logger = new ObjectPoolDebug(this);
+			_logger = new ObjectPoolDebug($"{nameof(ObjectPool)} ");
 			
 			// Check for duplicate names
 			CheckForDuplicatePoolNames();
@@ -220,24 +220,6 @@ namespace GameHelperSDK
 
 		public void ReturnObjectToPool(PooledObject po) 
 		{
-			// var po = go.GetComponent<PooledObject>();
-			// 
-			// if (po == null) 
-			// {
-			// 	_logger.LogWarning("Specified object is not a pooled instance: " + go.name);
-			// }
-			// else 
-			// {
-			// 	if (_poolDictionary.TryGetValue(po.PoolName, out var pool)) 
-			// 	{
-			// 		pool.ReturnObjectToPool(po);
-			// 	} 
-			// 	else 
-			// 	{
-			// 		_logger.LogWarning("No pool available with name: " + po.PoolName);
-			// 	}
-			// }
-			
 			if (_poolDictionary.TryGetValue(po.PoolName, out var pool)) 
 			{
 				pool.ReturnObjectToPool(po);
@@ -253,9 +235,9 @@ namespace GameHelperSDK
 	{
 		private readonly ObjectPool _objectPool;
 		
-		public ObjectPoolDebug(ObjectPool objectPool)
+		public ObjectPoolDebug(object header) : base(header)
 		{
-			_objectPool = objectPool;
+			
 		}
 		
 		public override void Log(object message)
