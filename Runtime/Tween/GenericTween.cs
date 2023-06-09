@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DG.Tweening;
+using Sirenix.Utilities;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -9,15 +10,23 @@ using Sirenix.OdinInspector;
 
 namespace GameHelperSDK
 {
-    public class GenericTween : CallerBase
+    [System.Serializable]
+    public class GenericTween
     {
+#if ODIN_INSPECTOR
+        [Title("Targets")]
+#else
+        [Header("Targets")]
+#endif
+        public List<Transform> TargetList;
+            
 #if ODIN_INSPECTOR
         [Title("Sequences")]
 #else
         [Header("Sequences")]
 #endif
         [SerializeField] 
-        private List<SequenceData> _sequenceDataList;
+        public List<SequenceData> SequenceDataList;
 
 #if ODIN_INSPECTOR
         [Title("Loops")]
@@ -25,36 +34,57 @@ namespace GameHelperSDK
         [Header("Loops")]
 #endif
         [SerializeField] 
-        private bool _hasLoops;
+        public bool HasLoops;
         
 #if ODIN_INSPECTOR
-        [ShowIf("@_hasLoops")] 
+        [ShowIf("@HasLoops")] 
 #endif
-        public LoopType _loopType;
+        public LoopType LoopingType;
         
 #if ODIN_INSPECTOR
-        [ShowIf("@_hasLoops")] 
+        [ShowIf("@HasLoops")] 
 #endif
-        public bool _infiniteLoop;
+        public bool InfiniteLoop;
         
 #if ODIN_INSPECTOR
-        [ShowIf("@_hasLoops && !_infiniteLoop")] 
+        [ShowIf("@HasLoops && !InfiniteLoop")] 
 #endif
-        public uint _loopCount;
-        
-        public override void DoAction()
+        public uint LoopCount;
+
+        private readonly GameDebug _logger;
+
+        public GenericTween(IEnumerable<Transform> targets, IEnumerable<SequenceData> sequences)
         {
-            // Clear playing tweens
-            var target = transform;
+            _logger = new GameDebug($"[GenericTween] ");
+            TargetList = new List<Transform>(targets);
+            SequenceDataList = new List<SequenceData>(sequences);
+        }
+        
+        public void DoAction()
+        {
+            if (TargetList.IsNullOrEmpty())
+            {
+                _logger.LogWarning("Targets list is empty on generic tween");
+                return;
+            }
             
-            target.DOKill();
-            DOTween.Kill(target);
+            foreach (var target in TargetList)
+            {
+                _DoActionInternal(target);
+            }
+        }                  
+
+        private void _DoActionInternal(Transform _target)
+        { 
+            // Clear playing tweens
+            _target.DOKill();
+            DOTween.Kill(_target);
                 
             // Create all sequences
             var allSequence = DOTween.Sequence();
             
             // Assign sequences
-            foreach (var sequenceData in _sequenceDataList)
+            foreach (var sequenceData in SequenceDataList)
             {
                 var sequence = DOTween.Sequence();
                 
@@ -62,20 +92,20 @@ namespace GameHelperSDK
                 if (sequenceData.OnSequenceStartEvents)
                 {
                     sequence.AppendCallback(() =>
-                        {
+                    {
                             //Debug.Log("Start");
                             sequenceData.OnSequenceStart?.Invoke();
-                        });
+                    });
                 }
                 
                 // Assign tweens
                 foreach (var tweenData in sequenceData.TweenDataList)
                 {
-                    var tween = GetTween(target, tweenData, sequenceData);
+                    var tween = GetTween(_target, tweenData, sequenceData);
                     
                     if (tween != null)
                     {
-                        sequence.Join(tween);
+                            sequence.Join(tween);
                     }
                 }
                 
@@ -84,8 +114,8 @@ namespace GameHelperSDK
                 {
                     sequence.AppendCallback(() =>
                     {
-                        //Debug.Log("Complete");
-                        sequenceData.OnSequenceComplete?.Invoke();
+                            //Debug.Log("Complete");
+                            sequenceData.OnSequenceComplete?.Invoke();
                     });
                 }
                 
@@ -93,11 +123,10 @@ namespace GameHelperSDK
             }
             
             // Set loops
-            if (_hasLoops)
+            if (HasLoops)
             {
-                var loopCount = _infiniteLoop ? -1 : (int)_loopCount;
-                
-                allSequence.SetLoops(loopCount, _loopType);
+                var loopCount = InfiniteLoop ? -1 : (int)LoopCount;
+                allSequence.SetLoops(loopCount, LoopingType);
             }
         }
         
@@ -129,14 +158,18 @@ namespace GameHelperSDK
                 case TweenActionType.RotateLikeTarget:
                     tween = target.DORotate(tweenData.RotateLikeTarget.rotation.eulerAngles, duration);
                     break;
+                case TweenActionType.Jump: 
+                    tween = target.DOJump(tweenData.JumpPosition,
+                                          tweenData.JumpPower,
+                                          tweenData.NumberOfJumps,
+                                          duration);
+                        break;
             }
             
             tween.SetEase(tweenData.Ease);
             
             return tween;
         }
-
-        public void DestroyObject() => Destroy(this.gameObject);
     }
     
     [System.Serializable]
@@ -207,6 +240,19 @@ namespace GameHelperSDK
         [ShowIf(nameof(ActionType), TweenActionType.RotateLikeTarget)] 
 #endif
         public Transform RotateLikeTarget;
+        
+#if ODIN_INSPECTOR
+        [ShowIf(nameof(ActionType), TweenActionType.Jump)] 
+#endif
+        public int NumberOfJumps;
+#if ODIN_INSPECTOR
+        [ShowIf(nameof(ActionType), TweenActionType.Jump)] 
+#endif
+        public Vector3 JumpPosition;
+#if ODIN_INSPECTOR
+        [ShowIf(nameof(ActionType), TweenActionType.Jump)] 
+#endif
+        public float JumpPower;        
     }
 
     public enum TweenActionType
@@ -219,5 +265,6 @@ namespace GameHelperSDK
         ScaleLikeTarget = 5,
         Rotate = 6,
         RotateLikeTarget = 7,
+        Jump = 8,
     }
 }

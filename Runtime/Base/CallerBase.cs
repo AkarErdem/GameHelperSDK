@@ -16,7 +16,8 @@ namespace GameHelperSDK
     
     public abstract class CallerBase : MonoBehaviour
     {
-        [SerializeField] protected UnityActiveEventCallType _callType;
+        [SerializeField] 
+        protected UnityActiveEventCallType _callType;
         
         protected virtual void Awake()
         {
@@ -49,5 +50,8 @@ namespace GameHelperSDK
         }
         
         public abstract void DoAction();
+        
+        public void DestroyObject() => UnityEngine.Object.Destroy(this.gameObject);
+
     }
 }
