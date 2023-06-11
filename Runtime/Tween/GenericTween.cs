@@ -215,6 +215,12 @@ namespace GameHelperSDK
                                           tweenData.NumberOfJumps,
                                           duration);
                         break;
+                case TweenActionType.JumpToTarget: 
+                        tween = target.DOJump(tweenData.JumpToTarget.position,
+                                tweenData.JumpPower,
+                                tweenData.NumberOfJumps,
+                                duration);
+                        break;
             }
             
             tween.SetEase(tweenData.Ease);
@@ -293,17 +299,21 @@ namespace GameHelperSDK
         public Transform RotateLikeTarget;
         
 #if ODIN_INSPECTOR
-        [ShowIf(nameof(ActionType), TweenActionType.Jump)] 
+        [ShowIf("@ActionType == TweenActionType.Jump || ActionType == TweenActionType.JumpToTarget")] 
 #endif
         public int NumberOfJumps;
+#if ODIN_INSPECTOR
+        [ShowIf("@ActionType == TweenActionType.Jump || ActionType == TweenActionType.JumpToTarget")] 
+#endif
+        public float JumpPower;  
 #if ODIN_INSPECTOR
         [ShowIf(nameof(ActionType), TweenActionType.Jump)] 
 #endif
         public Vector3 JumpPosition;
 #if ODIN_INSPECTOR
-        [ShowIf(nameof(ActionType), TweenActionType.Jump)] 
+        [ShowIf(nameof(ActionType), TweenActionType.JumpToTarget)] 
 #endif
-        public float JumpPower;        
+        public Transform JumpToTarget;
     }
 
     public enum TweenActionType
@@ -317,5 +327,6 @@ namespace GameHelperSDK
         Rotate = 6,
         RotateLikeTarget = 7,
         Jump = 8,
+        JumpToTarget = 9,
     }
 }
