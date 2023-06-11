@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Linq;
 using DG.Tweening;
+using DG.Tweening.Core;
 using Sirenix.Utilities;
 using UnityEngine;
 using UnityEngine.Events;
@@ -51,83 +53,132 @@ namespace GameHelperSDK
 #endif
         public uint LoopCount;
 
-        private readonly GameDebug _logger;
 
-        public GenericTween(IEnumerable<Transform> targets, IEnumerable<SequenceData> sequences)
-        {
-            _logger = new GameDebug($"[GenericTween] ");
-            TargetList = new List<Transform>(targets);
-            SequenceDataList = new List<SequenceData>(sequences);
-        }
+#if ODIN_INSPECTOR
+        [Title("Debug")]
+#else
+        [Header("Debug")]
+#endif
+        public bool IsLogEnabled;
+        
+        // Private
+        private GameDebug _logger;
+      
+        // State
+        public bool IsPlaying { get; private set; }
+
+        // public GenericTween(IEnumerable<Transform> targets, IEnumerable<SequenceData> sequences)
+        // {
+        //     TargetList = new List<Transform>(targets);
+        //     SequenceDataList = new List<SequenceData>(sequences);
+        // }
         
         public void DoAction()
         {
+            // Target list must have at least one item
             if (TargetList.IsNullOrEmpty())
             {
                 _logger.LogWarning("Targets list is empty on generic tween");
                 return;
             }
             
-            foreach (var target in TargetList)
+            // Remove null target items
+            TargetList = TargetList.Where(item => item != null).ToList();
+            
+            // Create logger
+            if (_logger == null)
             {
-                _DoActionInternal(target);
+                _logger = new GameDebug($"[GenericTween] ");
             }
-        }                  
+            _logger.IsEnabled = IsLogEnabled;
+            
+            for (var i = 0; i < TargetList.Count; i++)
+            {
+                var target = TargetList[i];
 
-        private void _DoActionInternal(Transform _target)
+                var allSequence = _DoActionInternal(target);
+
+                if (i == 0)
+                {
+                    allSequence.onPlay = AllSequencePlay;
+                }
+                if (i == TargetList.Count - 1)
+                {
+                    allSequence.onComplete = AllSequenceComplete;
+                }
+                allSequence.Play();
+            }
+        }
+
+        private Sequence _DoActionInternal(Transform target)
         { 
             // Clear playing tweens
-            _target.DOKill();
-            DOTween.Kill(_target);
-                
+            DOTween.Kill(target);
+            
             // Create all sequences
-            var allSequence = DOTween.Sequence();
+            var allSequence = DOTween.Sequence().Pause();
             
             // Assign sequences
-            foreach (var sequenceData in SequenceDataList)
+            for (var i = 0; i < SequenceDataList.Count; i++)
             {
-                var sequence = DOTween.Sequence();
-                
+                var sequenceIndex = i;
+                var sequenceData = SequenceDataList[i];
+                var sequence = DOTween.Sequence().Pause();
+
                 // Invoke OnSequenceStartEvents when sequence starts
                 if (sequenceData.OnSequenceStartEvents)
                 {
                     sequence.AppendCallback(() =>
                     {
-                            //Debug.Log("Start");
-                            sequenceData.OnSequenceStart?.Invoke();
+                        _logger.Log($"Sequence {sequenceIndex} started");
+                        sequenceData.OnSequenceStart?.Invoke();
                     });
                 }
-                
+
                 // Assign tweens
                 foreach (var tweenData in sequenceData.TweenDataList)
                 {
-                    var tween = GetTween(_target, tweenData, sequenceData);
-                    
+                    var tween = GetTween(target, tweenData, sequenceData);
+
                     if (tween != null)
                     {
-                            sequence.Join(tween);
+                        sequence.Join(tween);
                     }
                 }
-                
+
                 // Invoke OnSequenceCompleteEvents when sequence ends
                 if (sequenceData.OnSequenceCompleteEvents)
                 {
                     sequence.AppendCallback(() =>
                     {
-                            //Debug.Log("Complete");
-                            sequenceData.OnSequenceComplete?.Invoke();
+                        _logger.Log($"Sequence {sequenceIndex} completed");
+                        sequenceData.OnSequenceComplete?.Invoke();
                     });
                 }
-                
+
                 allSequence.Append(sequence);
             }
-            
+
             // Set loops
             if (HasLoops)
             {
                 var loopCount = InfiniteLoop ? -1 : (int)LoopCount;
                 allSequence.SetLoops(loopCount, LoopingType);
             }
+
+            return allSequence;
+        }
+
+        private void AllSequencePlay()
+        {
+            _logger.Log("All sequence started");
+            IsPlaying = true;
+        }
+        
+        private void AllSequenceComplete()
+        {
+            _logger.Log("All sequence completed");
+            IsPlaying = false;
         }
         
         private static Tween GetTween(Transform target, TweenData tweenData, SequenceData sequenceData)
