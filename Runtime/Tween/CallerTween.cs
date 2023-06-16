@@ -1,4 +1,3 @@
-using Sirenix.Utilities;
 using UnityEngine;
 
 namespace GameHelperSDK
@@ -10,7 +9,7 @@ namespace GameHelperSDK
         
         public override void DoAction()
         {
-            if (_genericTween.TargetList.IsNullOrEmpty()) 
+            if (_genericTween.TargetList.Count == 0) 
                 _genericTween.TargetList.Add(this.transform);
             _genericTween.DoAction();
         }
