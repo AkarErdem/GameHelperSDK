@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
-using DG.Tweening.Core;
-using Sirenix.Utilities;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -76,7 +74,7 @@ namespace GameHelperSDK
         public void DoAction()
         {
             // Target list must have at least one item
-            if (TargetList.IsNullOrEmpty())
+            if (TargetList == null || TargetList.Count == 0)
             {
                 _logger.LogWarning("Targets list is empty on generic tween");
                 return;
